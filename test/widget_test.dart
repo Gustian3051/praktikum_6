@@ -1,30 +1,39 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:praktikum_6/main.dart';
+import 'package:mockito/mockito.dart';
+import 'package:praktikum_6/models/task.dart';
+import 'helpers/database_helper_test.mocks.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Task List displays tasks', (WidgetTester tester) async {
+    // Mock database helper
+    final mockDbHelper = MockDatabaseHelper();
+    when(
+      mockDbHelper.getTasks(),
+    ).thenAnswer((_) async => [Task(id: 1, title: 'Mock Task')]);
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FutureBuilder<List<Task>>(
+            future: mockDbHelper.getTasks(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return ListView.builder(
+                  itemCount: snapshot.data!.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(title: Text(snapshot.data![index].title));
+                  },
+                );
+              }
+              return const CircularProgressIndicator();
+            },
+          ),
+        ),
+      ),
+    );
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('Mock Task'), findsOneWidget);
   });
 }
